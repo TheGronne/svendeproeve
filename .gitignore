@@ -88,6 +88,8 @@ project.lock.json
 *.userosscache
 *.sln.docstates
 
+*.dylib
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
