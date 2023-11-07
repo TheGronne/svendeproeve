@@ -5,17 +5,23 @@ using Microsoft.AspNetCore.SignalR.Client;
 using System.Threading.Tasks;
 using System;
 
-public class WebsocketAPI : MonoBehaviour
+public static class WebsocketAPI
 {
     private const string ServerAddess = "https://localhost:7016/";
     private const string Hub = "gameHub";
 
-    private HubConnection _connection;
+    private static HubConnection _connection;
 
-    public event Action<int> OnMessageReceived;
-    public event Action<string> OnHandshake;
+    public static event Action<string> OnHandshake;
+    public static event Action<int> OnDisconnect;
+    public static event Action<int> OnInputReceive;
+    public static event Action<int, bool> OnReady;
+    public static event Action OnStart;
+    public static event Action<int, float> OnRotation;
+    public static event Action<int, float, float> OnPlayerPosition;
+    public static event Action<int, float> OnMousePosition;
 
-    public async Task InitAsync(Player player)
+    public static async Task InitAsync(Player player)
     {
         _connection = new HubConnectionBuilder()
                 .WithUrl(ServerAddess + Hub)
@@ -26,47 +32,84 @@ public class WebsocketAPI : MonoBehaviour
             await HandShake(player.id, player.username);
         });
 
+        _connection.On("Disconnected", async (int id) =>
+        {
+            OnDisconnect?.Invoke(id);
+        });
+
         _connection.On("HandShake", (string playersJson) =>
         {
-            Debug.Log("Handshake");
-            Debug.Log(playersJson);
-            OnHandshake(playersJson);
+            OnHandshake?.Invoke(playersJson);
         });
 
         _connection.On("ChangeReady", (int playerId, bool ready) =>
         {
-            OnMessageReceived?.Invoke(playerId);
+            OnReady?.Invoke(playerId, ready);
+        });
+
+        _connection.On("StartGame", () =>
+        {
+            OnStart?.Invoke();
+        });
+
+        _connection.On("ReceiveRotation", (int playerId, float rotation) =>
+        {
+            OnRotation?.Invoke(playerId, rotation);
+        });
+
+        _connection.On("ReceivePlayerPosition", (int playerId, float posX, float posY) =>
+        {
+            OnPlayerPosition?.Invoke(playerId, posX, posY);
+        });
+
+        _connection.On("ReceiveMousePosition", (int playerId, float angle) =>
+        {
+            Debug.Log(angle);
+            OnMousePosition?.Invoke(playerId, angle);
         });
 
         _connection.On("ReceiveInput", (int message) =>
         {
-            OnMessageReceived?.Invoke(message);
+            OnInputReceive?.Invoke(message);
         });
-
-        _connection.On("ReceiveMousePos", (decimal x, decimal y) =>
-        {
-            
-        });
-
 
         await _connection.StartAsync();
-
 
         Debug.Log(_connection);
     }
 
-    public async Task SendInput()
+    public static async Task SendInput()
     {
         await _connection.SendAsync("SendInput", EventMessages.Shoot);
     }
 
-    public async Task HandShake(int id, string username)
+    public static async Task HandShake(int id, string username)
     {
         await _connection.SendAsync("HandShake", id, username);
     }
 
-    public async Task SendReady()
+    public static async Task SendReady(bool ready)
     {
-        await _connection.SendAsync("SendReady", true);
+        await _connection.SendAsync("SendReady", ready);
+    }
+
+    public static async Task StartGame()
+    {
+        await _connection.SendAsync("StartGame");
+    }
+
+    public static async Task SendRotation(float rotation)
+    {
+        await _connection.SendAsync("SendRotation", rotation);
+    }
+
+    public static async Task SendPlayerPosition(float posX, float posY)
+    {
+        await _connection.SendAsync("SendPlayerPosition", posX, posY);
+    }
+
+    public static async Task SendMousePosition(float angle)
+    {
+        await _connection.SendAsync("SendMousePosition", angle);
     }
 }

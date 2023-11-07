@@ -1,0 +1,12 @@
+Postman Commands
+
+Connect:
+{"protocol":"json","version":1}
+HandShake:
+{"arguments":[13, "Cool Name"],"invocationId":"0","target":"HandShake","type":1}
+ReadyUp:
+{"arguments":[true],"invocationId":"0","target":"SendReady","type":1}
+StartGame:
+{"arguments":[],"invocationId":"0","target":"StartGame","type":1}
+SendRotation:
+{"arguments":[20],"invocationId":"0","target":"SendRotation","type":1}

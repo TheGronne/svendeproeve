@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class UIHandler : MonoBehaviour
 {
@@ -37,15 +38,17 @@ public class UIHandler : MonoBehaviour
 
     //Lobby
     [SerializeField]
-    private LobbyHandler Lobby;
+    private List<TMP_Text> PlayerNames, PlayerStatuses;
+    [SerializeField]
+    private List<Button> PlayerReadyButtons;
+    [SerializeField]
+    private Button StartButton;
 
     //API
     [SerializeField]
     private API Api;
-    [SerializeField]
-    private WebsocketAPI WsApi;
 
-    private Player player;
+    private bool ShouldStart = false;
 
     // Start is called before the first frame update
     void Start()
@@ -58,7 +61,55 @@ public class UIHandler : MonoBehaviour
         LobbyCanvas.SetActive(false);
 
         MainCanvas.SetActive(true);
-        WsApi.OnHandshake += OnHandshake;
+        WebsocketAPI.OnHandshake += OnHandshake;
+        WebsocketAPI.OnReady += OnReadyUp;
+        WebsocketAPI.OnStart += OnStart;
+        WebsocketAPI.OnDisconnect += OnDisconnect;
+    }
+
+    private void Update()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            try
+            {
+                PlayerNames[i].text = LobbyHandler.players[i].username;
+                if (LobbyHandler.players[i].id == LobbyHandler.localPlayer.id)
+                    PlayerReadyButtons[i].gameObject.SetActive(true);
+
+                if (LobbyHandler.players[i].isready)
+                {
+                    PlayerStatuses[i].text = "Ready";
+                    PlayerStatuses[i].color = new Color(0, 255, 0);
+                    PlayerReadyButtons[i].GetComponentInChildren<TMP_Text>().text = "Unready";
+                    PlayerReadyButtons[i].GetComponent<Image>().color = new Color(255, 0, 0);
+                }
+                else
+                {
+                    PlayerStatuses[i].text = "Not Ready";
+                    PlayerStatuses[i].color = new Color(255, 0, 0);
+                    PlayerReadyButtons[i].GetComponentInChildren<TMP_Text>().text = "Ready up";
+                    PlayerReadyButtons[i].GetComponent<Image>().color = new Color(0, 255, 0);
+                }
+            }
+            catch
+            {
+                PlayerNames[i].text = "Player Name";
+                PlayerStatuses[i].text = "Not Ready";
+                PlayerStatuses[i].color = new Color(255, 0, 0);
+                PlayerReadyButtons[i].GetComponentInChildren<TMP_Text>().text = "Ready up";
+                PlayerReadyButtons[i].GetComponent<Image>().color = new Color(0, 255, 0);
+                continue;
+            }
+        }
+
+        if (LobbyHandler.IsEveryoneReady())
+            StartButton.gameObject.SetActive(true);
+        else
+            StartButton.gameObject.SetActive(false);
+
+        if (ShouldStart)
+            SceneManager.LoadScene("InGame");
     }
 
     public void OpenSignInMenu()
@@ -109,7 +160,7 @@ public class UIHandler : MonoBehaviour
     {
         BeforeConnectCanvas.SetActive(false);
         LobbyCanvas.SetActive(true);
-        await WsApi.InitAsync(player);
+        await WebsocketAPI.InitAsync(LobbyHandler.localPlayer);
     }
 
     //SignIn
@@ -120,7 +171,7 @@ public class UIHandler : MonoBehaviour
 
     public void OnSignInSuccess(string result)
     {
-        player = Player.CreateFromJSON(result);
+        LobbyHandler.localPlayer = Player.CreateFromJSON(result);
         OpenBeforeConnectMenu();
     }
 
@@ -152,7 +203,7 @@ public class UIHandler : MonoBehaviour
     public void ChangeSettings()
     {
         var dto = new ChangeSettingsDTO(NewUsername.text, NewLoginName.text, NewPassword.text, OldLoginName.text, OldPassword.text);
-        Api.ChangeSettings(player.id, dto, OnChangeSuccess, OnChangeFailure);
+        Api.ChangeSettings(LobbyHandler.localPlayer.id, dto, OnChangeSuccess, OnChangeFailure);
     }
 
     public void OnChangeSuccess(UnityWebRequest.Result result)
@@ -181,9 +232,36 @@ public class UIHandler : MonoBehaviour
         DeleteError.text = "Something went wrong. Please validate your credentials or try again later.";
     }
 
+    public async void ReadyUp()
+    {
+        await WebsocketAPI.SendReady(!LobbyHandler.localPlayer.isready);
+        LobbyHandler.localPlayer.isready = !LobbyHandler.localPlayer.isready;
+    }
+
+    public void OnReadyUp(int playerId, bool ready)
+    {
+        LobbyHandler.ChangeReadyState(playerId, ready);
+    }
+
+    public async void StartGame()
+    {
+        await WebsocketAPI.StartGame();
+    }
+
+    public void OnStart()
+    {
+        ShouldStart = true;
+    }
+
+    public void OnDisconnect(int id)
+    {
+        LobbyHandler.RemovePlayer(id);
+    }
+
     public void OnHandshake(string playersJson)
     {
         var players = Player.CreateListFromJSON(playersJson);
+        LobbyHandler.players = players;
         LobbyCanvas.SetActive(true);
     }
 }

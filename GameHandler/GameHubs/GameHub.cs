@@ -54,6 +54,29 @@ namespace GameHandler.GameHubs
             await Clients.All.SendAsync("ChangeReady", player.DBID, player.IsReady);
         }
 
+        public async Task StartGame()
+        {
+            await Clients.All.SendAsync("StartGame");
+        }
+
+        public async Task SendRotation(float rotation)
+        {
+            var player = Lobby.GetPlayer(Context.ConnectionId);
+            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceiveRotation", player.DBID, rotation);
+        }
+
+        public async Task SendPlayerPosition(float posX, float posY)
+        {
+            var player = Lobby.GetPlayer(Context.ConnectionId);
+            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceivePlayerPosition", player.DBID, posX, posY);
+        }
+
+        public async Task SendMousePosition(float angle)
+        {
+            var player = Lobby.GetPlayer(Context.ConnectionId);
+            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceiveMousePosition", player.DBID, angle);
+        }
+
         private bool ValidateUser()
         {
             return Lobby.DoesPlayerExist(Context.ConnectionId);

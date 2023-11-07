@@ -5,16 +5,16 @@ m_ProjectFiles:
     m_ContentTrackingEnabled: 1
     m_ModificationDate:
       serializedVersion: 2
-      ticks: 638342684183262831
-    m_Hash: 585601794
+      ticks: 638344524980910214
+    m_Hash: 1523615567
   m_LockFileStatus:
     m_FilePath: C:/Users/kaspe/Desktop/svendeproeve/Tanks/Packages/packages-lock.json
     m_PathExists: 1
     m_ContentTrackingEnabled: 1
     m_ModificationDate:
       serializedVersion: 2
-      ticks: 638342684749664641
-    m_Hash: 2958124764
+      ticks: 638344524980920201
+    m_Hash: 3130320590
 m_EmbeddedPackageManifests:
   m_ManifestsStatus: {}
 m_LocalPackages:
