@@ -77,6 +77,41 @@ namespace GameHandler.GameHubs
             await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceiveMousePosition", player.DBID, angle);
         }
 
+        public async Task SendBulletSpawn(float posX, float posY, float angle)
+        {
+            var player = Lobby.GetPlayer(Context.ConnectionId);
+            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceiveBulletSpawn", player.DBID, posX, posY, angle);
+        }
+
+        public async Task SendBulletDestroy(int bulletId)
+        {
+            var player = Lobby.GetPlayer(Context.ConnectionId);
+            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceiveBulletDestroy", player.DBID, bulletId);
+        }
+
+        public async Task SendPlayerHit()
+        {
+            Lobby.ChangeIsAlive(Context.ConnectionId, false);
+            var player = Lobby.GetPlayer(Context.ConnectionId);
+            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceivePlayerHit", player.DBID);
+
+            if (Lobby.GetAlivePlayers().Count <= 1)
+            {
+                var winningPlayer = Lobby.GetAlivePlayers()[0];
+                winningPlayer.Wins++;
+
+                if (winningPlayer.Wins >= 3)
+                    await Clients.All.SendAsync("EndGame", winningPlayer.DBID);
+
+                var players = Lobby.GetAllPlayers();
+                foreach (var item in players)
+                {
+                    item.IsAlive = true;
+                }
+                await Clients.All.SendAsync("StartRound", winningPlayer.DBID, winningPlayer.Wins);
+            }
+        }
+
         private bool ValidateUser()
         {
             return Lobby.DoesPlayerExist(Context.ConnectionId);

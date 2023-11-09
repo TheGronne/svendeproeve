@@ -43,5 +43,20 @@ namespace GameHandler.Classes
         {
             return players;
         }
+
+        public static void AddWin(string serverId)
+        {
+            players.Find(p => p.ServerID == serverId).Wins++;
+        }
+
+        public static void ChangeIsAlive(string serverId, bool isAlive)
+        {
+            players.Find(p => p.ServerID == serverId).IsAlive = isAlive;
+        }
+
+        public static List<Player> GetAlivePlayers()
+        {
+            return players.FindAll(p => p.IsAlive == true);
+        }
     }
 }

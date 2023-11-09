@@ -14,12 +14,16 @@ public static class WebsocketAPI
 
     public static event Action<string> OnHandshake;
     public static event Action<int> OnDisconnect;
-    public static event Action<int> OnInputReceive;
     public static event Action<int, bool> OnReady;
     public static event Action OnStart;
     public static event Action<int, float> OnRotation;
     public static event Action<int, float, float> OnPlayerPosition;
     public static event Action<int, float> OnMousePosition;
+    public static event Action<int, float, float, float> OnBulletSpawn;
+    public static event Action<int, int> OnBulletDestroy;
+    public static event Action<int> OnPlayerHit;
+    public static event Action<int, int> OnStartRound;
+    public static event Action<int> OnEndGame;
 
     public static async Task InitAsync(Player player)
     {
@@ -64,13 +68,33 @@ public static class WebsocketAPI
 
         _connection.On("ReceiveMousePosition", (int playerId, float angle) =>
         {
-            Debug.Log(angle);
             OnMousePosition?.Invoke(playerId, angle);
         });
 
-        _connection.On("ReceiveInput", (int message) =>
+        _connection.On("ReceiveBulletSpawn", (int playerId, float posX, float posY, float angle) =>
         {
-            OnInputReceive?.Invoke(message);
+            OnBulletSpawn?.Invoke(playerId, posX, posY, angle);
+        });
+
+        _connection.On("ReceiveBulletDestroy", (int playerId, int bulletId) =>
+        {
+            OnBulletDestroy?.Invoke(playerId, bulletId);
+        });
+
+        _connection.On("ReceivePlayerHit", (int playerId) =>
+        {
+            OnPlayerHit?.Invoke(playerId);
+        });
+
+        _connection.On("StartRound", (int winningPlayerId, int winningPlayerWins) =>
+        {
+            Debug.Log("Start Round");
+            OnStartRound?.Invoke(winningPlayerId, winningPlayerWins);
+        });
+
+        _connection.On("EndGame", (int winningPlayerId) =>
+        {
+            OnEndGame?.Invoke(winningPlayerId);
         });
 
         await _connection.StartAsync();
@@ -111,5 +135,20 @@ public static class WebsocketAPI
     public static async Task SendMousePosition(float angle)
     {
         await _connection.SendAsync("SendMousePosition", angle);
+    }
+
+    public static async Task SendBulletSpawn(float posX, float posY, float angle)
+    {
+        await _connection.SendAsync("SendBulletSpawn", posX, posY, angle);
+    }
+
+    public static async Task SendBulletDestroy(int bulletId)
+    {
+        await _connection.SendAsync("SendBulletDestroy", bulletId);
+    }
+
+    public static async Task SendPlayerHit()
+    {
+        await _connection.SendAsync("SendPlayerHit");
     }
 }

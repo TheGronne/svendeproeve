@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -17,18 +18,28 @@ public class LocalPlayerMovement : MonoBehaviour
 
     private float moveAngle;
 
-    private GameObject topSprite;   
+    private GameObject topSprite;
+    private GameObject topEnd;
+
+    public event Action<Vector3, float> OnShoot;
 
     private void Start()
     {
+        gameObject.layer = LayerMask.NameToLayer("LocalPlayer");
         rb = gameObject.GetComponent<Rigidbody2D>();
         topSprite = gameObject.transform.Find("Top").gameObject;
+        topEnd = topSprite.transform.Find("TopEnd").gameObject;
     }
 
     void Update()
     {
+
+        Debug.DrawRay(transform.position, Camera.main.ScreenToWorldPoint(Input.mousePosition), Color.yellow);
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis("Vertical");
+
+        if (Input.GetMouseButtonDown(0))
+            OnShoot(topEnd.transform.position, mouseAngle);
 
         movementDirection = new Vector2(horizontalInput, verticalInput);
 
@@ -61,9 +72,14 @@ public class LocalPlayerMovement : MonoBehaviour
 
     private void SetTopAngle()
     {
-        Vector2 positionOnScreen = Camera.main.WorldToViewportPoint(transform.position);
-        Vector2 mouseOnScreen = Camera.main.ScreenToViewportPoint(Input.mousePosition);
+        Vector2 positionOnScreen = transform.position;
+        Vector2 mouseOnScreen = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseAngle = AngleBetweenTwoPoints(positionOnScreen, mouseOnScreen) + 90;
         topSprite.transform.rotation = Quaternion.Euler(new Vector3(0f, 0f, mouseAngle));
+    }
+
+    public void HitByBullet()
+    {
+        Destroy(gameObject);
     }
 }
