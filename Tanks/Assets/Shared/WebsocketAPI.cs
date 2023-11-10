@@ -7,7 +7,7 @@ using System;
 
 public static class WebsocketAPI
 {
-    private const string ServerAddess = "https://localhost:7016/";
+    private const string ServerAddess = "https://localhost:7019/";
     private const string Hub = "gameHub";
 
     private static HubConnection _connection;

@@ -29,8 +29,6 @@ public class API : MonoBehaviour
 
     private IEnumerator Post(object payload, string url, Action<string> onSuccess, Action<string> onFailure)
     {
-        Debug.Log(JsonUtility.ToJson(payload));
-        Debug.Log($"https://localhost:7019/api/{url}");
         UnityWebRequest www = UnityWebRequest.Post($"https://localhost:7019/api/{url}", JsonUtility.ToJson(payload), "application/json");
         yield return www.SendWebRequest();
 
