@@ -100,7 +100,7 @@ namespace GameHandler.GameHubs
                 var winningPlayer = Lobby.GetAlivePlayers()[0];
                 winningPlayer.Wins++;
 
-                if (winningPlayer.Wins >= 3)
+                if (winningPlayer.Wins >= Lobby.GetWinsNecessary())
                     await Clients.All.SendAsync("EndGame", winningPlayer.DBID);
 
                 var players = Lobby.GetAllPlayers();
@@ -108,13 +108,19 @@ namespace GameHandler.GameHubs
                 {
                     item.IsAlive = true;
                 }
-                await Clients.All.SendAsync("StartRound", winningPlayer.DBID, winningPlayer.Wins);
+                await Clients.All.SendAsync("StartRound", winningPlayer.DBID, winningPlayer.Wins, GetLevelInteger());
             }
         }
 
         private bool ValidateUser()
         {
             return Lobby.DoesPlayerExist(Context.ConnectionId);
+        }
+
+        private int GetLevelInteger()
+        {
+            Random rnd = new Random();
+            return rnd.Next(0, 7);
         }
     }
 }

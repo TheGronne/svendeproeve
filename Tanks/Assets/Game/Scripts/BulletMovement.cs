@@ -52,8 +52,6 @@ public class BulletMovement : MonoBehaviour
         }
         if (collision.gameObject.tag == "Bullet")
         {
-            Debug.Log("HITBULLET");
-            Debug.Log(bulletId);
             OnDestroy(playerId, bulletId);
         }
     }

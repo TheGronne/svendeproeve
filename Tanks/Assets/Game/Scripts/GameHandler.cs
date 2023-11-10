@@ -4,12 +4,16 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameHandler : MonoBehaviour
 {
     [SerializeField]
     public List<GameObject> playerTanks;
     public List<GamePlayer> players = new List<GamePlayer>();
+
+    [SerializeField]
+    public List<GameObject> levels;
 
     [SerializeField]
     private GameObject bulletPrefab;
@@ -21,12 +25,16 @@ public class GameHandler : MonoBehaviour
     private List<UnSpawnedBullet> unSpawnedBullets = new List<UnSpawnedBullet>();
 
     private bool startNewRound = false;
+    private int nextLevelId = 0;
+
+    private GameObject currentLevel;
 
     // Start is called before the first frame update
     void Start()
     {
         PopulatePlayers();
 
+        WebsocketAPI.OnDisconnect += OnDisconnect;
         WebsocketAPI.OnRotation += OnRotation;
         WebsocketAPI.OnPlayerPosition += OnPlayerPosition;
         WebsocketAPI.OnMousePosition += OnMousePosition;
@@ -43,13 +51,16 @@ public class GameHandler : MonoBehaviour
 
         var localPlayer = GetLocalPlayer();
         localPlayer.gameObject.GetComponent<LocalPlayerMovement>().OnShoot += OnShootLocal;
-
+        
         StartRound();
     }
 
     // Update is called once per frame
     async void Update()
     {
+        if (players.Count <= 1)
+            EndGame(0);
+
         if (roundInProgess)
         {
             if (startNewRound)
@@ -76,15 +87,8 @@ public class GameHandler : MonoBehaviour
             {
                 foreach (var item in unSpawnedBullets)
                 {
-                    Debug.Log(item.PosX);
-                    Debug.Log(item.PosY);
-                    Debug.Log(item.PlayerId);
-                    Debug.Log(item.Angle);
                     var bullet = Instantiate(bulletPrefab, new Vector3(item.PosX, item.PosY, -2f), Quaternion.Euler(new Vector3(0f, 0f, item.Angle)));
-                    Debug.Log("ALMOST DONE");
                     SetBulletProperties(bullet, item.PlayerId);
-                    Debug.Log("FINISH");
-
                 }
                 unSpawnedBullets.Clear();
             }
@@ -116,7 +120,8 @@ public class GameHandler : MonoBehaviour
         {
             playerScores[i].GetComponent<TMP_Text>().text = "P" + (i + 1) + ": " + players[i].wins;
         }
-        
+
+        ChangeLevel(nextLevelId);
         SetPlayerPositions();
         SetPlayerActive();
         roundInProgess = true;
@@ -124,7 +129,6 @@ public class GameHandler : MonoBehaviour
 
     private void EndRound()
     {
-        Debug.Log("END ROUND");
         roundInProgess = false;
         var winningPlayer = players.Find(p => p.alive == true);
 
@@ -191,10 +195,10 @@ public class GameHandler : MonoBehaviour
 
     private void EndGame(int winningPlayerId)
     {
-        Debug.Log(winningPlayerId + " got 3 wins");
+        SceneManager.LoadScene("Menu");
     }
 
-    public void PlayerDie(int playerId)
+    private void PlayerDie(int playerId)
     {
         var player = GetPlayerById(playerId);
         player.alive = false;
@@ -275,11 +279,12 @@ public class GameHandler : MonoBehaviour
         return ids.Length;
     }
 
-    private void OnStartNewRound(int winningPlayerId, int winningPlayerWins)
+    private void OnStartNewRound(int winningPlayerId, int winningPlayerWins, int levelId)
     {
         GetPlayerById(winningPlayerId).wins = winningPlayerWins;
        
         startNewRound = true;
+        nextLevelId = levelId;
     }
 
     private void StartNewRound()
@@ -287,5 +292,19 @@ public class GameHandler : MonoBehaviour
         EndRound();
         StartRound();
         startNewRound = false;
+    }
+
+    private void ChangeLevel(int levelId)
+    {
+        if (currentLevel != null)
+            Destroy(currentLevel);
+
+        currentLevel = Instantiate(levels[levelId], new Vector3(0f, 0f, 0f), Quaternion.Euler(new Vector3(0f, 0f, 0f)));
+    }
+
+    private void OnDisconnect(int playerId)
+    {
+        GetPlayerById(playerId).gameObject.SetActive(false);
+        players.Remove(GetPlayerById(playerId));
     }
 }

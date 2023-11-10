@@ -176,8 +176,6 @@ ScriptsOnlyBuild:
     - Class: 104
       Script: {instanceID: 0}
     - Class: 114
-      Script: {instanceID: 1684}
-    - Class: 114
       Script: {instanceID: 2032}
     - Class: 114
       Script: {instanceID: 2966}
@@ -275,7 +273,7 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 5794}
     - Class: 114
-      Script: {instanceID: 6048}
+      Script: {instanceID: 6046}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -639,7 +637,7 @@ ScriptsOnlyBuild:
     className: ContentSizeFitter
   - hash:
       serializedVersion: 2
-      Hash: 2f77897d18640570963636868c31b5b6
+      Hash: 7f7526981b41b977da9410ccbc95d2bb
     assemblyName: Assembly-CSharp
     namespaceName: 
     className: GameHandler

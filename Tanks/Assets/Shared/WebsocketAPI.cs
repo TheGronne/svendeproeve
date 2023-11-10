@@ -22,7 +22,7 @@ public static class WebsocketAPI
     public static event Action<int, float, float, float> OnBulletSpawn;
     public static event Action<int, int> OnBulletDestroy;
     public static event Action<int> OnPlayerHit;
-    public static event Action<int, int> OnStartRound;
+    public static event Action<int, int, int> OnStartRound;
     public static event Action<int> OnEndGame;
 
     public static async Task InitAsync(Player player)
@@ -86,10 +86,10 @@ public static class WebsocketAPI
             OnPlayerHit?.Invoke(playerId);
         });
 
-        _connection.On("StartRound", (int winningPlayerId, int winningPlayerWins) =>
+        _connection.On("StartRound", (int winningPlayerId, int winningPlayerWins, int levelId) =>
         {
             Debug.Log("Start Round");
-            OnStartRound?.Invoke(winningPlayerId, winningPlayerWins);
+            OnStartRound?.Invoke(winningPlayerId, winningPlayerWins, levelId);
         });
 
         _connection.On("EndGame", (int winningPlayerId) =>

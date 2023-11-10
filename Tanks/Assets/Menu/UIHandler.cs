@@ -65,6 +65,9 @@ public class UIHandler : MonoBehaviour
         WebsocketAPI.OnReady += OnReadyUp;
         WebsocketAPI.OnStart += OnStart;
         WebsocketAPI.OnDisconnect += OnDisconnect;
+
+        if (LobbyHandler.players.Count > 0)
+            OpenLobbyMenu();
     }
 
     private void Update()
@@ -159,8 +162,13 @@ public class UIHandler : MonoBehaviour
     public async void OpenLobbyMenu()
     {
         BeforeConnectCanvas.SetActive(false);
+        MainCanvas.SetActive(false);
+        SignUpCanvas.SetActive(false);
+        DeleteUserCanvas.SetActive(false);
+        ChangeSettingsCanvas.SetActive(false);
         LobbyCanvas.SetActive(true);
-        await WebsocketAPI.InitAsync(LobbyHandler.localPlayer);
+        if (LobbyHandler.players.Count <= 0)
+            await WebsocketAPI.InitAsync(LobbyHandler.localPlayer);
     }
 
     //SignIn

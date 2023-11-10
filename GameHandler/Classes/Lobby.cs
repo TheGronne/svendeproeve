@@ -58,5 +58,10 @@ namespace GameHandler.Classes
         {
             return players.FindAll(p => p.IsAlive == true);
         }
+
+        public static int GetWinsNecessary()
+        {
+            return 7 - players.Count;
+        }
     }
 }
