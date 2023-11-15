@@ -1,10 +1,56 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
+
+[Serializable]
+public class PlayerState
+{
+    public int id;
+    public Hull hull;
+    public Turret turret;
+
+    [Serializable]
+    public class Hull
+    {
+        public float PosX;
+        public float PosY;
+        public float Rotation;
+
+        public Hull(LocalPlayerMovement player)
+        {
+            PosX = player?.transform?.position.x ?? 0;
+            PosY = player?.transform?.position.y ?? 0;
+            Rotation = player?.rotationAngle ?? 0;
+        }
+    }
+
+    [Serializable]
+    public class Turret
+    {
+        public float Rotation;
+
+        public Turret(LocalPlayerMovement player)
+        {
+            Rotation = player?.mouseAngle ?? 0;
+        }
+    }
+
+    public PlayerState(LocalPlayerMovement player)
+    {
+        if (player == null)
+            return;
+
+        id = player.playerId;
+        hull = new Hull(player);
+        turret = new Turret(player);
+    }
+}
 
 public class LocalPlayerMovement : MonoBehaviour
 {
+    public int playerId;
     private float speed = 1;
 
     private float rotationSpeed = 360;
@@ -18,7 +64,7 @@ public class LocalPlayerMovement : MonoBehaviour
 
     private float moveAngle;
 
-    private GameObject topSprite;
+    public GameObject topSprite;
     private GameObject topEnd;
 
     public event Action<Vector3, float> OnShoot;
@@ -33,8 +79,6 @@ public class LocalPlayerMovement : MonoBehaviour
 
     void Update()
     {
-
-        Debug.DrawRay(transform.position, Camera.main.ScreenToWorldPoint(Input.mousePosition), Color.yellow);
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis("Vertical");
 
@@ -78,8 +122,13 @@ public class LocalPlayerMovement : MonoBehaviour
         topSprite.transform.rotation = Quaternion.Euler(new Vector3(0f, 0f, mouseAngle));
     }
 
-    public void HitByBullet()
+    public PlayerState GetCurrentState()
     {
-        Destroy(gameObject);
+        return new PlayerState(this);
+    }
+
+    public void SetPlayerID(int id)
+    {
+        playerId = id;
     }
 }

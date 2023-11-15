@@ -1,5 +1,5 @@
 ﻿using Svendeproeve.GameHubs.Classes;
-using Svendeproeve.DTOObjects;
+using Svendeproeve.Objects.DTOObjects;
 using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
 
@@ -20,6 +20,7 @@ namespace Svendeproeve.GameHubs
         {
             await Clients.All.SendAsync("Disconnected", Lobby.GetPlayer(Context.ConnectionId).DBID);
             Lobby.RemovePlayer(Context.ConnectionId);
+            await Clients.All.SendAsync("EndGame");
         }
 
         public async Task HandShake(int playerID, string username)
@@ -64,22 +65,10 @@ namespace Svendeproeve.GameHubs
             await Clients.All.SendAsync("StartGame");
         }
 
-        public async Task SendRotation(float rotation)
+        public async Task SendPlayerState(byte[] playerState)
         {
             var player = Lobby.GetPlayer(Context.ConnectionId);
-            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceiveRotation", player.DBID, rotation);
-        }
-
-        public async Task SendPlayerPosition(float posX, float posY)
-        {
-            var player = Lobby.GetPlayer(Context.ConnectionId);
-            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceivePlayerPosition", player.DBID, posX, posY);
-        }
-
-        public async Task SendMousePosition(float angle)
-        {
-            var player = Lobby.GetPlayer(Context.ConnectionId);
-            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceiveMousePosition", player.DBID, angle);
+            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceivePlayerState", playerState);
         }
 
         public async Task SendBulletSpawn(float posX, float posY, float angle)
@@ -94,18 +83,22 @@ namespace Svendeproeve.GameHubs
             await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceiveBulletDestroy", player.DBID, bulletId);
         }
 
-        public async Task SendPlayerHit()
+        //Killing player is the player who shot the bullet that killed the player
+        public async Task SendPlayerHit(int killingPlayerId)
         {
             Lobby.ChangeIsAlive(Context.ConnectionId, false);
-            var player = Lobby.GetPlayer(Context.ConnectionId);
-            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceivePlayerHit", player.DBID);
+            var dyingPlayer = Lobby.GetPlayer(Context.ConnectionId);
+            await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceivePlayerHit", dyingPlayer.DBID);
+
+            Lobby.GetPlayerByDBID(killingPlayerId).Kills += 1;
+            dyingPlayer.Deaths += 1;
 
             if (Lobby.GetAlivePlayers().Count <= 1)
             {
                 var winningPlayer = Lobby.GetAlivePlayers()[0];
                 winningPlayer.Wins++;
 
-                if (winningPlayer.Wins >= 1)
+                if (winningPlayer.Wins >= Lobby.GetWinsNecessary())
                 {
                     await Clients.All.SendAsync("EndGame", winningPlayer.DBID);
                     await CreateMatch(winningPlayer.DBID);
@@ -129,15 +122,6 @@ namespace Svendeproeve.GameHubs
         {
             Random rnd = new Random();
             return rnd.Next(0, 7);
-        }
-
-        static async Task GetProductAsync()
-        {
-            HttpResponseMessage response = await client.GetAsync("https://localhost:7019/api/match?id=4");
-            if (response.IsSuccessStatusCode)
-            {
-                Console.WriteLine(response.Content);
-            }
         }
 
         private static async Task CreateMatch(int winnerId)

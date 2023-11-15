@@ -5,7 +5,6 @@ ScriptsOnlyBuild:
     Assembly-CSharp.dll:
     - API
     - BulletMovement
-    - CameraController
     - GameHandler
     - UIHandler
     - test
@@ -35,6 +34,7 @@ ScriptsOnlyBuild:
     - TMPro.TMP_Settings
     - TMPro.TMP_SpriteAsset
     - TMPro.TMP_StyleSheet
+    - TMPro.TextMeshProUGUI
     Unity.TextMeshPro.dll:
     - TMPro.TMP_FontAsset
     - TMPro.TMP_InputField
@@ -55,7 +55,10 @@ ScriptsOnlyBuild:
     - UnityEngine.UI.Image
     - UnityEngine.UI.InputField
     - UnityEngine.UI.LayoutElement
+    - UnityEngine.UI.Mask
     - UnityEngine.UI.RectMask2D
+    - UnityEngine.UI.ScrollRect
+    - UnityEngine.UI.Scrollbar
     - UnityEngine.UI.Text
   serializedClasses:
     Unity.TextMeshPro:
@@ -97,6 +100,8 @@ ScriptsOnlyBuild:
     - UnityEngine.UI.InputField/SubmitEvent
     - UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
     - UnityEngine.UI.Navigation
+    - UnityEngine.UI.ScrollRect/ScrollRectEvent
+    - UnityEngine.UI.Scrollbar/ScrollEvent
     - UnityEngine.UI.SpriteState
   methodsToPreserve:
   - assembly: Assembly-CSharp
@@ -140,6 +145,9 @@ ScriptsOnlyBuild:
     methodName: ReadyUp
   - assembly: Assembly-CSharp
     fullTypeName: UIHandler
+    methodName: OpenBeforeConnectMenu
+  - assembly: Assembly-CSharp
+    fullTypeName: UIHandler
     methodName: OpenMainMenu
   - assembly: Assembly-CSharp
     fullTypeName: UIHandler
@@ -149,7 +157,13 @@ ScriptsOnlyBuild:
     methodName: OpenBeforeConnectMenu
   - assembly: Assembly-CSharp
     fullTypeName: UIHandler
+    methodName: OpenStatsMenu
+  - assembly: Assembly-CSharp
+    fullTypeName: UIHandler
     methodName: OpenSignUpMenu
+  - assembly: Assembly-CSharp
+    fullTypeName: UIHandler
+    methodName: DisonnectFromLobby
   - assembly: Assembly-CSharp
     fullTypeName: UIHandler
     methodName: StartGame
@@ -243,8 +257,6 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 2032}
     - Class: 114
-      Script: {instanceID: 2076}
-    - Class: 114
       Script: {instanceID: 2496}
     - Class: 114
       Script: {instanceID: 2500}
@@ -263,9 +275,15 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 3696}
     - Class: 114
+      Script: {instanceID: 3700}
+    - Class: 114
       Script: {instanceID: 3832}
     - Class: 114
       Script: {instanceID: 4382}
+    - Class: 114
+      Script: {instanceID: 4992}
+    - Class: 114
+      Script: {instanceID: 5234}
     - Class: 114
       Script: {instanceID: 5356}
     - Class: 114
@@ -273,7 +291,7 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 5794}
     - Class: 114
-      Script: {instanceID: 6046}
+      Script: {instanceID: 6044}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -385,12 +403,6 @@ ScriptsOnlyBuild:
     className: NavMeshModifierVolume
   - hash:
       serializedVersion: 2
-      Hash: 812f1285f7f2171226fb89abd6e80b21
-    assemblyName: Assembly-CSharp
-    namespaceName: 
-    className: CameraController
-  - hash:
-      serializedVersion: 2
       Hash: 751e5bae2a317288c2ab58d66687092b
     assemblyName: UnityEngine.UI
     namespaceName: UnityEngine.UIElements
@@ -451,7 +463,7 @@ ScriptsOnlyBuild:
     className: RawImage
   - hash:
       serializedVersion: 2
-      Hash: 63e5b8ec645104639d476ddc74824b7c
+      Hash: 326871d654299576f5454994f1d18e56
     assemblyName: Assembly-CSharp
     namespaceName: 
     className: LocalPlayerMovement
@@ -877,7 +889,7 @@ ScriptsOnlyBuild:
     className: SpriteLibrarySourceAsset
   - hash:
       serializedVersion: 2
-      Hash: e48f31ceb9026fa28f6d633700246a34
+      Hash: 480a9ea4f832856709c28792f678312b
     assemblyName: Assembly-CSharp
     namespaceName: 
     className: UIHandler

@@ -10,7 +10,7 @@ public class UIHandler : MonoBehaviour
 {
     //Canvases
     [SerializeField]
-    private GameObject MainCanvas, SignInCanvas, SignUpCanvas, BeforeConnectCanvas, ChangeSettingsCanvas, DeleteUserCanvas, LobbyCanvas;
+    private GameObject MainCanvas, SignInCanvas, SignUpCanvas, BeforeConnectCanvas, ChangeSettingsCanvas, DeleteUserCanvas, LobbyCanvas, StatsCanvas;
 
     //SignIn
     [SerializeField]
@@ -43,6 +43,12 @@ public class UIHandler : MonoBehaviour
     private List<Button> PlayerReadyButtons;
     [SerializeField]
     private Button StartButton;
+    [SerializeField]
+    private TMP_Text WinningPlayer;
+
+    //MatchStats
+    [SerializeField]
+    private GameObject MatchStatContent, MatchPrefab;
 
     //API
     [SerializeField]
@@ -59,6 +65,7 @@ public class UIHandler : MonoBehaviour
         ChangeSettingsCanvas.SetActive(false);
         DeleteUserCanvas.SetActive(false);
         LobbyCanvas.SetActive(false);
+        StatsCanvas.SetActive(false);
 
         MainCanvas.SetActive(true);
         WebsocketAPI.OnHandshake += OnHandshake;
@@ -67,52 +74,61 @@ public class UIHandler : MonoBehaviour
         WebsocketAPI.OnDisconnect += OnDisconnect;
 
         if (LobbyHandler.players.Count > 0)
+        {
             OpenLobbyMenu();
+            if (!string.IsNullOrEmpty(LobbyHandler.lastWinningPlayer.username))
+            {
+                WinningPlayer.text = "WINNER: " + LobbyHandler.lastWinningPlayer.username;
+                LobbyHandler.lastWinningPlayer = new Player();
+            }
+        }
     }
 
     private void Update()
     {
-        for (int i = 0; i < 4; i++)
+        if (LobbyCanvas.activeSelf)
         {
-            try
+            for (int i = 0; i < 4; i++)
             {
-                PlayerNames[i].text = LobbyHandler.players[i].username;
-                if (LobbyHandler.players[i].id == LobbyHandler.localPlayer.id)
-                    PlayerReadyButtons[i].gameObject.SetActive(true);
+                try
+                {
+                    PlayerNames[i].text = LobbyHandler.players[i].username;
+                    if (LobbyHandler.players[i].id == LobbyHandler.localPlayer.id)
+                        PlayerReadyButtons[i].gameObject.SetActive(true);
 
-                if (LobbyHandler.players[i].isready)
-                {
-                    PlayerStatuses[i].text = "Ready";
-                    PlayerStatuses[i].color = new Color(0, 255, 0);
-                    PlayerReadyButtons[i].GetComponentInChildren<TMP_Text>().text = "Unready";
-                    PlayerReadyButtons[i].GetComponent<Image>().color = new Color(255, 0, 0);
+                    if (LobbyHandler.players[i].isready)
+                    {
+                        PlayerStatuses[i].text = "Ready";
+                        PlayerStatuses[i].color = new Color(0, 255, 0);
+                        PlayerReadyButtons[i].GetComponentInChildren<TMP_Text>().text = "Unready";
+                        PlayerReadyButtons[i].GetComponent<Image>().color = new Color(255, 0, 0);
+                    }
+                    else
+                    {
+                        PlayerStatuses[i].text = "Not Ready";
+                        PlayerStatuses[i].color = new Color(255, 0, 0);
+                        PlayerReadyButtons[i].GetComponentInChildren<TMP_Text>().text = "Ready up";
+                        PlayerReadyButtons[i].GetComponent<Image>().color = new Color(0, 255, 0);
+                    }
                 }
-                else
+                catch
                 {
+                    PlayerNames[i].text = "Player Name";
                     PlayerStatuses[i].text = "Not Ready";
                     PlayerStatuses[i].color = new Color(255, 0, 0);
-                    PlayerReadyButtons[i].GetComponentInChildren<TMP_Text>().text = "Ready up";
-                    PlayerReadyButtons[i].GetComponent<Image>().color = new Color(0, 255, 0);
+                    PlayerReadyButtons[i].gameObject.SetActive(false);
+                    continue;
                 }
             }
-            catch
-            {
-                PlayerNames[i].text = "Player Name";
-                PlayerStatuses[i].text = "Not Ready";
-                PlayerStatuses[i].color = new Color(255, 0, 0);
-                PlayerReadyButtons[i].GetComponentInChildren<TMP_Text>().text = "Ready up";
-                PlayerReadyButtons[i].GetComponent<Image>().color = new Color(0, 255, 0);
-                continue;
-            }
+
+            if (LobbyHandler.IsEveryoneReady())
+                StartButton.gameObject.SetActive(true);
+            else
+                StartButton.gameObject.SetActive(false);
+
+            if (ShouldStart)
+                SceneManager.LoadScene("InGame");
         }
-
-        if (LobbyHandler.IsEveryoneReady())
-            StartButton.gameObject.SetActive(true);
-        else
-            StartButton.gameObject.SetActive(false);
-
-        if (ShouldStart)
-            SceneManager.LoadScene("InGame");
     }
 
     public void OpenSignInMenu()
@@ -143,6 +159,7 @@ public class UIHandler : MonoBehaviour
         SignInCanvas.SetActive(false);
         ChangeSettingsCanvas.SetActive(false);
         LobbyCanvas.SetActive(false);
+        StatsCanvas.SetActive(false);
         BeforeConnectCanvas.SetActive(true);
     }
 
@@ -169,6 +186,18 @@ public class UIHandler : MonoBehaviour
         LobbyCanvas.SetActive(true);
         if (LobbyHandler.players.Count <= 0)
             await WebsocketAPI.InitAsync(LobbyHandler.localPlayer);
+    }
+
+    public void OpenStatsMenu()
+    {
+        BeforeConnectCanvas.SetActive(false);
+        MainCanvas.SetActive(false);
+        SignUpCanvas.SetActive(false);
+        DeleteUserCanvas.SetActive(false);
+        ChangeSettingsCanvas.SetActive(false);
+        LobbyCanvas.SetActive(false);
+        StatsCanvas.SetActive(true);
+        GetMatchStats();
     }
 
     //SignIn
@@ -261,6 +290,13 @@ public class UIHandler : MonoBehaviour
         ShouldStart = true;
     }
 
+    public async void DisonnectFromLobby()
+    {
+        OpenBeforeConnectMenu();
+        await WebsocketAPI.Disconnect();
+        LobbyHandler.players.Clear();
+    }
+
     public void OnDisconnect(int id)
     {
         LobbyHandler.RemovePlayer(id);
@@ -271,5 +307,36 @@ public class UIHandler : MonoBehaviour
         var players = Player.CreateListFromJSON(playersJson);
         LobbyHandler.players = players;
         LobbyCanvas.SetActive(true);
+    }
+
+    public void GetMatchStats()
+    {
+        Api.GetMatchStats(LobbyHandler.localPlayer.id, OnGetMatchStatsSuccess, OnGetMatchStatsFailure);
+    }
+
+    public void OnGetMatchStatsSuccess(string resultJson)
+    {
+        var stats = MatchStat.CreateListFromJSON(resultJson);
+        for (int i = 0; i < stats.Count; i++)
+        {
+            var match = stats[i];
+            var prab = Instantiate(MatchPrefab);
+            prab.transform.SetParent(MatchStatContent.transform, false);
+            prab.transform.position = new Vector2(prab.transform.position.x, prab.transform.position.y - (i * 25));
+
+            for (int j = 0; j < match.playernames.Count; j++)
+            {
+                prab.transform.Find("Player" + (j + 1)).GetComponent<TMP_Text>().text = match.playernames[j];
+            }
+            prab.transform.Find("Kills").GetComponent<TMP_Text>().text = match.kills.ToString();
+            prab.transform.Find("Deaths").GetComponent<TMP_Text>().text = match.deaths.ToString();
+            prab.transform.Find("Winner").GetComponent<TMP_Text>().text = match.winner;
+        }
+        
+    }
+
+    public void OnGetMatchStatsFailure(UnityWebRequest.Result result)
+    {
+
     }
 }

@@ -4,6 +4,9 @@ using UnityEngine;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Threading.Tasks;
 using System;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
 
 public static class WebsocketAPI
 {
@@ -23,7 +26,7 @@ public static class WebsocketAPI
     public static event Action<int, int> OnBulletDestroy;
     public static event Action<int> OnPlayerHit;
     public static event Action<int, int, int> OnStartRound;
-    public static event Action<int> OnEndGame;
+    public static event Action<int?> OnEndGame;
 
     public static async Task InitAsync(Player player)
     {
@@ -56,19 +59,20 @@ public static class WebsocketAPI
             OnStart?.Invoke();
         });
 
-        _connection.On("ReceiveRotation", (int playerId, float rotation) =>
+        _connection.On("ReceivePlayerState", (byte[] bytes) =>
         {
-            OnRotation?.Invoke(playerId, rotation);
-        });
+            PlayerState state;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                ms.Write(bytes, 0, bytes.Length);
+                ms.Seek(0, SeekOrigin.Begin);
+                state = (PlayerState)bf.Deserialize(ms);
+            }
 
-        _connection.On("ReceivePlayerPosition", (int playerId, float posX, float posY) =>
-        {
-            OnPlayerPosition?.Invoke(playerId, posX, posY);
-        });
-
-        _connection.On("ReceiveMousePosition", (int playerId, float angle) =>
-        {
-            OnMousePosition?.Invoke(playerId, angle);
+            OnRotation?.Invoke(state.id, state.hull.Rotation);
+            OnPlayerPosition?.Invoke(state.id, state.hull.PosX, state.hull.PosY);
+            OnMousePosition?.Invoke(state.id, state.turret.Rotation);
         });
 
         _connection.On("ReceiveBulletSpawn", (int playerId, float posX, float posY, float angle) =>
@@ -92,7 +96,7 @@ public static class WebsocketAPI
             OnStartRound?.Invoke(winningPlayerId, winningPlayerWins, levelId);
         });
 
-        _connection.On("EndGame", (int winningPlayerId) =>
+        _connection.On("EndGame", (int? winningPlayerId) =>
         {
             OnEndGame?.Invoke(winningPlayerId);
         });
@@ -100,11 +104,6 @@ public static class WebsocketAPI
         await _connection.StartAsync();
 
         Debug.Log(_connection);
-    }
-
-    public static async Task SendInput()
-    {
-        await _connection.SendAsync("SendInput", EventMessages.Shoot);
     }
 
     public static async Task HandShake(int id, string username)
@@ -122,19 +121,16 @@ public static class WebsocketAPI
         await _connection.SendAsync("StartGame");
     }
 
-    public static async Task SendRotation(float rotation)
+    public static async Task SendPlayerState(PlayerState state)
     {
-        await _connection.SendAsync("SendRotation", rotation);
-    }
-
-    public static async Task SendPlayerPosition(float posX, float posY)
-    {
-        await _connection.SendAsync("SendPlayerPosition", posX, posY);
-    }
-
-    public static async Task SendMousePosition(float angle)
-    {
-        await _connection.SendAsync("SendMousePosition", angle);
+        byte[] bytes;
+        BinaryFormatter bf = new BinaryFormatter();
+        using (MemoryStream ms = new MemoryStream())
+        {
+            bf.Serialize(ms, state);
+            bytes = ms.ToArray();
+        }
+        await _connection.SendAsync("SendPlayerState", bytes);
     }
 
     public static async Task SendBulletSpawn(float posX, float posY, float angle)
@@ -147,8 +143,13 @@ public static class WebsocketAPI
         await _connection.SendAsync("SendBulletDestroy", bulletId);
     }
 
-    public static async Task SendPlayerHit()
+    public static async Task SendPlayerHit(int killingPlayerId)
     {
-        await _connection.SendAsync("SendPlayerHit");
+        await _connection.SendAsync("SendPlayerHit", killingPlayerId);
+    }
+    
+    public static async Task Disconnect()
+    {
+        await _connection.StopAsync();
     }
 }

@@ -34,6 +34,11 @@ namespace Svendeproeve.GameHubs.Classes
             return players.Find(p => p.ServerID == serverId);
         }
 
+        public static Player GetPlayerByDBID(int databaseId)
+        {
+            return players.Find(p => p.DBID == databaseId);
+        }
+
         public static bool DoesPlayerExist(string serverId)
         {
             return players.Any(p => p.ServerID == serverId);

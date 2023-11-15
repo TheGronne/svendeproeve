@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMatchRepository, MatchRepository>();
+builder.Services.AddScoped<IMatchStatRepository, MatchStatRepository>();
 builder.Services.AddScoped<ISQLProvider, SQLProvider>();
 
 builder.Services.AddControllers();

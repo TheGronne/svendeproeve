@@ -8,6 +8,8 @@
         public bool IsReady { get; set; } = false;
         public int Wins { get; set; } = 0;
         public bool IsAlive { get; set; } = true;
+        public int Kills { get; set; } = 0;
+        public int Deaths { get; set; } = 0;
 
         public Player(string serverId, int dbid, string name)
         {

@@ -33,7 +33,6 @@ public class GameHandler : MonoBehaviour
     void Start()
     {
         PopulatePlayers();
-
         WebsocketAPI.OnDisconnect += OnDisconnect;
         WebsocketAPI.OnRotation += OnRotation;
         WebsocketAPI.OnPlayerPosition += OnPlayerPosition;
@@ -48,9 +47,6 @@ public class GameHandler : MonoBehaviour
         {
             playerScores[i].SetActive(false);
         }
-
-        var localPlayer = GetLocalPlayer();
-        localPlayer.gameObject.GetComponent<LocalPlayerMovement>().OnShoot += OnShootLocal;
         
         StartRound();
     }
@@ -58,9 +54,6 @@ public class GameHandler : MonoBehaviour
     // Update is called once per frame
     async void Update()
     {
-        if (players.Count <= 1)
-            EndGame(0);
-
         if (roundInProgess)
         {
             if (startNewRound)
@@ -68,9 +61,7 @@ public class GameHandler : MonoBehaviour
 
             //Send state to other players
             var localPlayer = GetLocalPlayer();
-            await WebsocketAPI.SendRotation(localPlayer.gameObject.GetComponent<LocalPlayerMovement>().rotationAngle);
-            await WebsocketAPI.SendPlayerPosition(localPlayer.gameObject.transform.position.x, localPlayer.gameObject.transform.position.y);
-            await WebsocketAPI.SendMousePosition(localPlayer.gameObject.GetComponent<LocalPlayerMovement>().mouseAngle);
+            await WebsocketAPI.SendPlayerState(localPlayer.gameObject.GetComponent<LocalPlayerMovement>().GetCurrentState());
 
             //Set state of other players
             foreach (var item in players)
@@ -116,6 +107,7 @@ public class GameHandler : MonoBehaviour
 
     private void StartRound()
     {
+
         for (int i = 0; i < players.Count; i++)
         {
             playerScores[i].GetComponent<TMP_Text>().text = "P" + (i + 1) + ": " + players[i].wins;
@@ -179,6 +171,13 @@ public class GameHandler : MonoBehaviour
 
     private void PopulatePlayers()
     {
+        players.Clear();
+        foreach (var tank in playerTanks)
+        {
+            try { Destroy(tank.GetComponent<LocalPlayerMovement>()); } catch (Exception ex) { }
+            try { Destroy(tank.GetComponent<OnlinePlayer>()); } catch (Exception ex) { }
+        }
+
         for(var i = 0; i < LobbyHandler.players.Count; i++)
         {
             var player = LobbyHandler.players[i];
@@ -191,10 +190,17 @@ public class GameHandler : MonoBehaviour
             else
                 players[i].gameObject.AddComponent<OnlinePlayer>();
         }
+
+        var localPlayer = GetLocalPlayer();
+        localPlayer.gameObject.GetComponent<LocalPlayerMovement>().OnShoot += OnShootLocal;
+        localPlayer.gameObject.GetComponent<LocalPlayerMovement>().SetPlayerID(localPlayer.id);
     }
 
-    private void EndGame(int winningPlayerId)
+    private void EndGame(int? winningPlayerId)
     {
+        if (winningPlayerId != null)
+            LobbyHandler.SetWinningPlayer((int)winningPlayerId);
+
         SceneManager.LoadScene("Menu");
     }
 
@@ -222,12 +228,12 @@ public class GameHandler : MonoBehaviour
 
     private GamePlayer GetLocalPlayer()
     {
-        return players[LobbyHandler.GetPlayerIndex(LobbyHandler.localPlayer.id)];
+        return players.Find(p => p.id == LobbyHandler.localPlayer.id);
     }
 
     private GamePlayer GetPlayerById(int id)
     {
-        return players[LobbyHandler.GetPlayerIndex(id)];
+        return players.Find(p => p.id == id);
     }
 
     private async void OnBulletDestroy(int playerId, int bulletId)
@@ -241,10 +247,11 @@ public class GameHandler : MonoBehaviour
             await WebsocketAPI.SendBulletDestroy(bulletId);
     }
 
-    private async void OnHitLocalPlayer()
+    //Killing player is the player who shot the bullet that killed the player
+    private async void OnHitLocalPlayer(int killingPlayerId)
     {
         PlayerDie(GetLocalPlayer().id);
-        await WebsocketAPI.SendPlayerHit();
+        await WebsocketAPI.SendPlayerHit(killingPlayerId);
     }
 
     private void OnHitOnlinePlayer(int playerId)
@@ -268,7 +275,6 @@ public class GameHandler : MonoBehaviour
     private int FindMissingBulletId(GamePlayer player)
     {
         var ids = player.bullets.Select(b => b.GetComponent<BulletMovement>().bulletId).ToArray();
-        Array.Sort(ids);
 
         for (int i = 0; i < ids.Length; i++)
         {
@@ -281,8 +287,10 @@ public class GameHandler : MonoBehaviour
 
     private void OnStartNewRound(int winningPlayerId, int winningPlayerWins, int levelId)
     {
-        GetPlayerById(winningPlayerId).wins = winningPlayerWins;
-       
+        if (winningPlayerId != 0 && winningPlayerWins != 0)
+            GetPlayerById(winningPlayerId).wins = winningPlayerWins;
+
+
         startNewRound = true;
         nextLevelId = levelId;
     }
@@ -304,7 +312,8 @@ public class GameHandler : MonoBehaviour
 
     private void OnDisconnect(int playerId)
     {
-        GetPlayerById(playerId).gameObject.SetActive(false);
-        players.Remove(GetPlayerById(playerId));
+        var player = GetPlayerById(playerId);
+        players.Remove(player);
+        LobbyHandler.RemovePlayer(playerId);
     }
 }

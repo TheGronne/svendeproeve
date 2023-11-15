@@ -27,6 +27,11 @@ public class API : MonoBehaviour
         StartCoroutine(Delete("user", $"loginName={user.LoginName}&password={user.Password}", onSuccess, onFailure));
     }
 
+    public void GetMatchStats(int playerId, Action<string> onSuccess, Action<UnityWebRequest.Result> onFailure)
+    {
+        StartCoroutine(Get("match", $"id={playerId}", onSuccess, onFailure));
+    } 
+
     private IEnumerator Post(object payload, string url, Action<string> onSuccess, Action<string> onFailure)
     {
         UnityWebRequest www = UnityWebRequest.Post($"https://localhost:7019/api/{url}", JsonUtility.ToJson(payload), "application/json");

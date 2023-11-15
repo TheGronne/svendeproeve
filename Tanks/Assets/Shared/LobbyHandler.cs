@@ -6,6 +6,7 @@ public static class LobbyHandler
 {
     public static Player localPlayer = new Player();
     public static List<Player> players = new List<Player>();
+    public static Player lastWinningPlayer = new Player();
 
     public static void ChangeReadyState(int id, bool ready)
     {
@@ -45,5 +46,11 @@ public static class LobbyHandler
     public static bool IsLocalPlayer(int id)
     {
         return localPlayer.id == id;
+    }
+
+    public static void SetWinningPlayer(int id)
+    {
+        var player = players.Find(p => p.id == id);
+        lastWinningPlayer = player;
     }
 }

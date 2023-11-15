@@ -13,7 +13,7 @@ public class BulletMovement : MonoBehaviour
     private Rigidbody2D rigidbody;
 
     public event Action<int, int> OnDestroy;
-    public event Action OnHitLocalPlayer;
+    public event Action<int> OnHitLocalPlayer;
 
     public int bulletId;
     public int playerId;
@@ -46,7 +46,7 @@ public class BulletMovement : MonoBehaviour
         if (collision.gameObject.tag == "Player")
         {
             if (collision.gameObject.GetComponent<LocalPlayerMovement>() != null)
-                OnHitLocalPlayer();
+                OnHitLocalPlayer(playerId);
 
             OnDestroy(playerId, bulletId);
         }
