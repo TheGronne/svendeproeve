@@ -67,18 +67,27 @@ namespace Svendeproeve.GameHubs
 
         public async Task SendPlayerState(byte[] playerState)
         {
+            if (!ValidateUser())
+                return;
+
             var player = Lobby.GetPlayer(Context.ConnectionId);
             await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceivePlayerState", playerState);
         }
 
         public async Task SendBulletSpawn(float posX, float posY, float angle)
         {
+            if (!ValidateUser())
+                return;
+
             var player = Lobby.GetPlayer(Context.ConnectionId);
             await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceiveBulletSpawn", player.DBID, posX, posY, angle);
         }
 
         public async Task SendBulletDestroy(int bulletId)
         {
+            if (!ValidateUser())
+                return;
+
             var player = Lobby.GetPlayer(Context.ConnectionId);
             await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceiveBulletDestroy", player.DBID, bulletId);
         }
@@ -86,6 +95,9 @@ namespace Svendeproeve.GameHubs
         //Killing player is the player who shot the bullet that killed the player
         public async Task SendPlayerHit(int killingPlayerId)
         {
+            if (!ValidateUser())
+                return;
+
             Lobby.ChangeIsAlive(Context.ConnectionId, false);
             var dyingPlayer = Lobby.GetPlayer(Context.ConnectionId);
             await Clients.AllExcept(Context.ConnectionId).SendAsync("ReceivePlayerHit", dyingPlayer.DBID);
